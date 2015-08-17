@@ -27,7 +27,7 @@
 
 - (NSInteger)tableView:(YZTableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return 9;
+    return 50;
 }
 // 返回每一行cell的样子
 - (UITableViewCell *)tableView:(YZTableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -40,8 +40,6 @@
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
         
     }
-    
-
     
     cell.imageView.image = [UIImage imageNamed:@"公司Logo"];
     

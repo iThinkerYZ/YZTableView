@@ -19,6 +19,8 @@
 // 记录每个可见cell的indexPaths的顺序
 @property (nonatomic, strong) NSMutableArray *visibleIndexPaths;
 
+@property (nonatomic, assign) NSInteger rows;
+
 @end
 
 
@@ -69,6 +71,9 @@
     // 先获取总共有多少cell
     NSInteger rows = [self.dataSource tableView:self numberOfRowsInSection:0];
     
+    _rows = rows;
+    
+    
     // 遍历所有cell的高度，计算每行cell的frame
     CGRect cellF;
     CGFloat cellX = 0;
@@ -107,6 +112,7 @@
             
             // 记录每个可见cell的indexPaths的顺序
             [self.visibleIndexPaths addObject:indexPath];
+
 
         }
         
@@ -162,8 +168,12 @@
     // 获取当前偏移量
     CGFloat offsetY = self.contentOffset.y;
     
+    
     // 获取可见数组中第一个cell
-    UITableViewCell *firstCell = self.visibleCells[0];
+    UITableViewCell *firstCell = nil;
+    if (self.visibleCells.count) {
+        firstCell = self.visibleCells[0];
+    }
     
     // 获取第一个cell的y值
     CGFloat firstCellY = firstCell.frame.origin.y;
@@ -183,21 +193,38 @@
     // 判断滚动方向
     if (firstCellY < offsetY) { // 内容往下移动
         
-        // 判断有没有滚动到最底部
-        if (offsetY + self.bounds.size.height > self.contentSize.height) {
+        // 判断有没有滚动到最底部，这个判断有可能不会很准确，因为有可能用户一下拉到最底部，就会导致有些cell还没加载
+        // 如果可见的最后一个cell的角标为最后一行，表示加载到最底部，就不需要加载
+        NSIndexPath *visibleLastIndexPath = [self.visibleIndexPaths lastObject];
+        if (visibleLastIndexPath.row == _rows - 1) {
+            
             return;
         }
+
+//        // 判断有没有滚动到最底部
+//        if (offsetY + self.bounds.size.height > self.contentSize.height) {
+//            return;
+//        }
         
         // 判断下当前可见cell数组中第一个cell有没有离开屏幕
         if ([self isInScreen:firstCell.frame] == NO) { // 如果不在屏幕
             // 从可见cell数组移除
             [self.visibleCells removeObject:firstCell];
             
+            
             // 删除第0个从可见的indexPath
-            [self.visibleIndexPaths removeObjectAtIndex:0];
+            if (self.visibleIndexPaths.count) {
+                
+                [self.visibleIndexPaths removeObjectAtIndex:0];
+            }
             
             // 添加到缓存池中
-            [self.reuserCells addObject:firstCell];
+            if (firstCell) {
+                
+                [self.reuserCells addObject:firstCell];
+            }
+            
+            NSLog(@"%@",self.visibleIndexPaths);
             
             // 移除父控件
             [firstCell removeFromSuperview];
@@ -208,6 +235,7 @@
         // 这里需要计算下一个cell的y值，需要获取对应的cell的高度
         // 而高度需要根据indexPath，从数据源获取
         // 可以数组记录每个可见cell的indexPath的顺序,然后获取对应可见的indexPath的角标，就能获取下一个indexPath.
+        
         
         // 获取最后一个cell的indexPath
         NSIndexPath *indexPath = [self.visibleIndexPaths lastObject];
@@ -249,15 +277,28 @@
         
         
     }else{ // 内容往上移动
-        // 判断有没有滚动到最顶部
-        if (offsetY < 0) {
+        
+        
+        // 判断有没有滚动到最顶部，这个判断有可能不会很准确，因为有可能用户一下拉到最顶部，就会导致有些cell还没加载
+        // 可见的第一个cell的角标为0，表示加载到最顶部，就不需要加载
+        NSIndexPath *visibleFirstIndexPath = nil;
+        if (self.visibleIndexPaths.count) {
+           visibleFirstIndexPath   = self.visibleIndexPaths[0];
+        }
+       
+        if (visibleFirstIndexPath.row == 0) {
+            
             return;
         }
-
+        
+//        // 判断有没有滚动到最顶部
+//        if (offsetY < 0) {
+//            return;
+//        }
         
         
         // 判断下当前可见cell数组中最后一个cell有没有离开屏幕
-        if ([self isInScreen:lastCell.frame] == NO) { // 如果不在屏幕
+        if ([self isInScreen:lastCell.frame] == NO ) { // 如果不在屏幕
             // 从可见cell数组移除
             [self.visibleCells removeObject:lastCell];
             
@@ -272,10 +313,13 @@
             
         }
         
-        
         // 判断下可见cell数组中第一个cell的上一个cell显没显示在屏幕上
         // 获取第一个cell的indexPath
-        NSIndexPath *indexPath = self.visibleIndexPaths[0];
+        NSIndexPath *indexPath = nil;
+        if (self.visibleIndexPaths.count) {
+          indexPath   = self.visibleIndexPaths[0];
+        }
+        
         
 
         // 获取下一个cell的indexPath
